@@ -539,7 +539,7 @@ function thisPost(api, data = {}) {
 function doUploadAliYun(uri, option) {
 
 	return new Promise(async (resolve, reject) => {
-		const { file, mime, used, source } = option;
+		let { file, mime, used, source } = option;
 		if (!source) source = 'unknow';
 		if (!mime) mime = 'image/png';
 		// console.log({ file, mime, used, source });
