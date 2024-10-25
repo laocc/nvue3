@@ -1,0 +1,17 @@
+{
+	"name": "nvue3",
+	"version": "1.0.0",
+	"description": "for uniapp & vue3",
+	"main": "src/kernel.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"nodejs_patch": "^1.0.0"
+	},
+	"devDependencies": {
+		"nodejs_patch": "^1.0.0"
+	}
+}
