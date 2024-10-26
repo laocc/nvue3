@@ -1,0 +1,8 @@
+{
+	"easycom": {
+		"autoscan": true,
+		"custom": {
+			"^v-(.*)": "/node_modules/nvue3/components/v-$1.vue"
+		}
+	}
+}
