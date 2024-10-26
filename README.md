@@ -7,7 +7,7 @@ import App from './App';
 
 import { createSSRApp } from 'vue';
 
-import kernel from '@/kernel/kernel';
+import kernel from 'nvue3';
 
 import config from '@/common/config';
 import variables from '@/common/variables';
