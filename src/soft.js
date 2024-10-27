@@ -7,6 +7,8 @@ export default class {
 	model = ''; //手机品牌下的型号
 	devid = ''; //手机唯一编码
 
+	singlePage = false; //是否从朋友圈进入的单页模式
+
 	// #ifdef APP-PLUS
 	packName = ''; //APP包名
 	appid = ''; //小程序的APPID，H5和APP为在manifest中设置的appid
@@ -33,171 +35,200 @@ export default class {
 	};
 
 	constructor(conf) {
-		// console.log('soft start')
-		// #ifdef MP-WEIXIN || APP || H5
-		const base = uni.getAppBaseInfo();
-		// console.log({ base, });
-		this.name = base.appName || 'unknow'; //应用名称
-		this.sdk = base.SDKVersion || '0.0.0'; //SDK主版本号
-		this.appid = base.appId; //这是uniAPP的ID，不是小程序的ID
-		this.version = base.appVersion; //APP的版本号，也就是在manifest中设置的版本号，小程序为提交申核的版本号
-		this.theme = base.theme; //主体色
-		// #endif
+		try {
 
-		// #ifdef MP-WEIXIN || APP || H5
-		const device = uni.getDeviceInfo();
-		const windows = uni.getWindowInfo();
-		console.log({ device, windows });
+			// #ifdef MP-WEIXIN
+			const { scene } = uni.getLaunchOptionsSync();
+			this.singlePage = (scene === 1154);
+			console.log('weixin.singlePage=', this.singlePage, scene);
+			// #endif
 
-		this.brand = (device.brand || 'unknow').toLowerCase(); //手机品牌
-		this.model = device.model || 'unknow'; //手机品牌下的型号
-		this.devid = device.deviceId || 'unknow'; //设备唯一编码
-		this.system = device.system || 'unknow'; //操作系统及版本	
-
-		this.size.windowWidth = windows.windowWidth; //可使用窗口宽度	
-		this.size.windowHeight = windows.windowHeight; //
-
-		this.size.width = windows.windowWidth; //可使用窗口宽度
-		this.size.height = windows.windowHeight;
-
-		this.size.screenWidth = windows.screenWidth; //屏幕尺寸
-		this.size.screenHeight = windows.screenHeight;
-
-		this.size.top = windows.statusBarHeight || 25; //顶部状态栏高度，css中直接用var(--status-bar-height)
-		this.size.ratio = windows.pixelRatio; //设备像素比
-
-		this.size.navigation = conf.navHeight || 44; //导航栏高度 var(--status-bar-height)
-		this.size.bodyHeight = windows.screenHeight - this.size.top - this.size.navigation; //除去顶部和菜单的高度
-		// #endif
-
-
-		// #ifndef MP-WEIXIN || APP || H5
-		const system = uni.getSystemInfoSync();
-
-		this.brand = (system.brand || 'unknow').toLowerCase(); //手机品牌
-		this.name = system.name || 'unknow'; //应用名称
-		this.model = system.model || 'unknow'; //手机品牌下的型号
-		this.devid = system.deviceId || 'unknow'; //设备唯一编码
-		this.sdk = system.SDKVersion || '0.0.0'; //小程序主版本号
-		this.appid = system.appId;
-		this.os = system.osName;
-		this.osver = system.osVersion;
-		this.version = system.appVersion; //APP的版本号，也就是在manifest中设置的版本号，小程序为提交申核的版本号
-
-		this.size.windowWidth = system.windowWidth; //可使用窗口宽度	
-		this.size.windowHeight = system.windowHeight; //
-		this.size.top = system.statusBarHeight || 26; //顶部状态栏高度
-		this.size.ratio = system.pixelRatio; //设备像素比
-		this.size.screenWidth = system.screenWidth; //屏幕尺寸
-		this.size.screenHeight = system.screenHeight;
-		this.size.width = system.windowWidth; //屏幕尺寸
-		this.size.height = system.windowHeight;
-		this.size.navigation = conf.navHeight || 44; //导航栏高度
-		this.size.bodyHeight = system.screenHeight - this.size.top - this.size.navigation; //除去顶部和菜单的高度
-
-		// #endif
-
-		//#ifdef H5
-		this.ua = navigator.userAgent;
-		this.devid = uni.getStorageSync('_DEVID_');
-		if (!this.devid) {
-			this.devid = ''.rand();
-			uni.setStorageSync('_DEVID_', this.devid);
-		}
-		//#endif
-
-
-		// #ifdef MP-WEIXIN||MP-ALIPAY||MP-BAIDU||MP-QQ||MP-KUAISHOU
-		const accountInfo = uni.getAccountInfoSync();
-		this.appid = accountInfo.miniProgram.appId; //小程序的appID，抖音、飞书、百度，不支持
-		this.version = accountInfo.miniProgram.version; //APP的版本号
-		if (!this.version) this.version = accountInfo.miniProgram.envVersion;
-		// #endif
-
-		//#ifdef MP-TOUTIAO
-		const accountTou = tt.getEnvInfoSync();
-		this.appid = accountTou.microapp.appId;
-		this.version = accountTou.microapp.mpVersion;
-		if (!this.version) this.version = accountTou.microapp.envType;
-		// #endif
-
-
-		// #ifdef MP-WEIXIN||MP-ALIPAY||MP-BAIDU||MP-TOUTIAO||MP-QQ
-		//胶囊按钮
-		this.size.button = uni.getMenuButtonBoundingClientRect();
-		this.size.navbar = this.size.button.bottom;
-		// #endif
-		// #ifdef H5
-		this.size.button = { bottom: 56, height: 32, left: 281, right: 368, top: 24, width: 87 };
-		this.size.navbar = this.size.button.bottom;
-		// #endif
-		console.log('this.size.button', this.size.button)
-
-		// #ifdef APP-PLUS
-		// console.log('plus.os', plus.os)
-		// console.log('plus.runtime', plus.runtime)
-		this.os = plus.os.name.toLowerCase(); //操作系统，android或ios
-		this.osver = plus.os.version; //操作系统版本号
-		this.version = import.meta.env.VITE_VERSION || conf.version; //热更包版本号
-
-		this.packName = plus.weex.config.env.appName; //包名
-		this.appid = plus.runtime.appid; //如：__UNI__123456
-		// this.debug = !!plus.weex.config.env.debugMode; //开发环境
-		// this.option = plus.runtime.arguments;
-		//调用plus.device.imei、plus.device.imsi、plus.device.uuid 不会触发授权提示框
-		// console.log('plus.runtimeplus.runtimeplus.runtimeplus.runtime')
-		// console.log(plus.runtime)
-
-		if (this.os === 'android') {
-			plus.device.getOAID({
-				success: (res) => {
-					// console.log('plus.device.getOAID', res)
-					this.oaid = res.oaid;
-				},
-				fail: err => {
-					// console.error('plus.device.getOAID', this.os, err);
-					this.simulator++;
-				}
-			});
-			plus.device.getAAID({
-				success: (res) => {
-					// console.log('plus.device.getAAID', res)
-					this.aaid = res.aaid;
-				},
-				fail: err => {
-					// console.error('plus.device.getAAID', err);
-					this.simulator++;
-				}
-			});
-		}
-
-
-		plus.device.getInfo({
-			success: (res) => {
-				// console.log('plus.device.getInfo', res)
-				if (res.uuid) this.uuid = res.uuid; //重装APP可能会变
-				if (res.imei) this.imei = res.imei;
-				if (res.imsi) this.imsi = res.imsi;
-			},
-			fail: err => {
-				// console.error('plus.device.getInfo', err);
-				this.simulator++;
+			// console.log('soft start')
+			// #ifdef MP-WEIXIN || APP || H5
+			if (!this.singlePage) {
+				const base = uni.getAppBaseInfo();
+				this.name = base.appName || 'unknow'; //应用名称
+				this.sdk = base.SDKVersion || '0.0.0'; //SDK主版本号
+				this.appid = base.appId; //这是uniAPP的ID，不是小程序的ID
+				this.version = base.appVersion; //APP的版本号，也就是在manifest中设置的版本号，小程序为提交申核的版本号
+				this.theme = base.theme; //主体色
 			}
-		});
-		// #endif
+			// #endif
 
+			// #ifdef MP-WEIXIN || APP || H5
+			if (!this.singlePage) {
+				const device = uni.getDeviceInfo();
+				this.brand = (device.brand || 'unknow').toLowerCase(); //手机品牌
+				this.model = device.model || 'unknow'; //手机品牌下的型号
+				this.devid = device.deviceId || 'unknow'; //设备唯一编码
+				this.system = device.system || 'unknow'; //操作系统及版本	
 
-		for (let k in conf) {
-			if (k === 'ua') {
-				//#ifndef H5 || MP
-				//h5和小程序不可以自定义
-				this.ua = (conf.ua || 'Mozilla/5.0 ({os}/{osver} {brand}/{model})').re(this);
-				//#endif
+				const windows = uni.getWindowInfo();
+				this.size.windowWidth = windows.windowWidth; //可使用窗口宽度	
+				this.size.windowHeight = windows.windowHeight; //
+
+				this.size.width = windows.windowWidth; //可使用窗口宽度
+				this.size.height = windows.windowHeight;
+
+				this.size.screenWidth = windows.screenWidth; //屏幕尺寸
+				this.size.screenHeight = windows.screenHeight;
+
+				this.size.top = windows.statusBarHeight || 25; //顶部状态栏高度，css中直接用var(--status-bar-height)
+				this.size.ratio = windows.pixelRatio; //设备像素比
+
+				this.size.navigation = conf.navHeight || 44; //导航栏高度 var(--status-bar-height)
+				this.size.bodyHeight = windows.screenHeight - this.size.top - this.size.navigation; //除去顶部和菜单的高度
 			}
 			else {
-				this[k] = conf[k];
+				//单页模式下，只有这个能获取到尺寸
+				const system = uni.getSystemInfoSync();
+				this.size.windowWidth = system.windowWidth; //可使用窗口宽度	
+				this.size.windowHeight = system.windowHeight; //
+				this.size.top = system.statusBarHeight || 26; //顶部状态栏高度
+				this.size.ratio = system.pixelRatio; //设备像素比
+				this.size.screenWidth = system.screenWidth; //屏幕尺寸
+				this.size.screenHeight = system.screenHeight;
+				this.size.width = system.windowWidth; //屏幕尺寸
+				this.size.height = system.windowHeight;
+				this.size.navigation = conf.navHeight || 44; //导航栏高度
+				this.size.bodyHeight = system.screenHeight - this.size.top - this.size.navigation; //除去顶部和菜单的高度
+			}
+			// #endif
+
+
+			// #ifndef MP-WEIXIN || APP || H5
+			const system = uni.getSystemInfoSync();
+
+			this.brand = (system.brand || 'unknow').toLowerCase(); //手机品牌
+			this.name = system.name || 'unknow'; //应用名称
+			this.model = system.model || 'unknow'; //手机品牌下的型号
+			this.devid = system.deviceId || 'unknow'; //设备唯一编码
+			this.sdk = system.SDKVersion || '0.0.0'; //小程序主版本号
+			this.appid = system.appId;
+			this.os = system.osName;
+			this.osver = system.osVersion;
+			this.version = system.appVersion; //APP的版本号，也就是在manifest中设置的版本号，小程序为提交申核的版本号
+
+			this.size.windowWidth = system.windowWidth; //可使用窗口宽度	
+			this.size.windowHeight = system.windowHeight; //
+			this.size.top = system.statusBarHeight || 26; //顶部状态栏高度
+			this.size.ratio = system.pixelRatio; //设备像素比
+			this.size.screenWidth = system.screenWidth; //屏幕尺寸
+			this.size.screenHeight = system.screenHeight;
+			this.size.width = system.windowWidth; //屏幕尺寸
+			this.size.height = system.windowHeight;
+			this.size.navigation = conf.navHeight || 44; //导航栏高度
+			this.size.bodyHeight = system.screenHeight - this.size.top - this.size.navigation; //除去顶部和菜单的高度
+
+			// #endif
+
+			//#ifdef H5
+			this.ua = navigator.userAgent;
+			this.devid = uni.getStorageSync('_DEVID_');
+			if (!this.devid) {
+				this.devid = ''.rand();
+				uni.setStorageSync('_DEVID_', this.devid);
+			}
+			//#endif
+
+
+			// #ifdef MP-WEIXIN||MP-ALIPAY||MP-BAIDU||MP-QQ||MP-KUAISHOU
+			const accountInfo = uni.getAccountInfoSync();
+			this.appid = accountInfo.miniProgram.appId; //小程序的appID，抖音、飞书、百度，不支持
+			this.version = accountInfo.miniProgram.version; //APP的版本号
+			if (!this.version) this.version = accountInfo.miniProgram.envVersion;
+			// #endif
+
+			//#ifdef MP-TOUTIAO
+			const accountTou = tt.getEnvInfoSync();
+			this.appid = accountTou.microapp.appId;
+			this.version = accountTou.microapp.mpVersion;
+			if (!this.version) this.version = accountTou.microapp.envType;
+			// #endif
+
+
+			// #ifdef MP-WEIXIN||MP-ALIPAY||MP-BAIDU||MP-TOUTIAO||MP-QQ
+			//胶囊按钮
+			this.size.button = uni.getMenuButtonBoundingClientRect();
+			this.size.navbar = this.size.button.bottom;
+			// #endif
+
+			// #ifdef H5
+			this.size.button = { bottom: 56, height: 32, left: 281, right: 368, top: 24, width: 87 };
+			this.size.navbar = this.size.button.bottom;
+			// #endif
+			// console.log('this.size.button', this.size.button)
+
+			// #ifdef APP-PLUS
+			// console.log('plus.os', plus.os)
+			// console.log('plus.runtime', plus.runtime)
+			this.os = plus.os.name.toLowerCase(); //操作系统，android或ios
+			this.osver = plus.os.version; //操作系统版本号
+			this.version = import.meta.env.VITE_VERSION || conf.version; //热更包版本号
+
+			this.packName = plus.weex.config.env.appName; //包名
+			this.appid = plus.runtime.appid; //如：__UNI__123456
+			// this.debug = !!plus.weex.config.env.debugMode; //开发环境
+			// this.option = plus.runtime.arguments;
+			//调用plus.device.imei、plus.device.imsi、plus.device.uuid 不会触发授权提示框
+			// console.log('plus.runtimeplus.runtimeplus.runtimeplus.runtime')
+			// console.log(plus.runtime)
+
+			if (this.os === 'android') {
+				plus.device.getOAID({
+					success: (res) => {
+						// console.log('plus.device.getOAID', res)
+						this.oaid = res.oaid;
+					},
+					fail: err => {
+						// console.error('plus.device.getOAID', this.os, err);
+						this.simulator++;
+					}
+				});
+				plus.device.getAAID({
+					success: (res) => {
+						// console.log('plus.device.getAAID', res)
+						this.aaid = res.aaid;
+					},
+					fail: err => {
+						// console.error('plus.device.getAAID', err);
+						this.simulator++;
+					}
+				});
+			}
+
+
+			plus.device.getInfo({
+				success: (res) => {
+					// console.log('plus.device.getInfo', res)
+					if (res.uuid) this.uuid = res.uuid; //重装APP可能会变
+					if (res.imei) this.imei = res.imei;
+					if (res.imsi) this.imsi = res.imsi;
+				},
+				fail: err => {
+					// console.error('plus.device.getInfo', err);
+					this.simulator++;
+				}
+			});
+			// #endif
+
+
+			for (let k in conf) {
+				if (k === 'ua') {
+					//#ifndef H5 || MP
+					//h5和小程序不可以自定义
+					this.ua = (conf.ua || 'Mozilla/5.0 ({os}/{osver} {brand}/{model})').re(this);
+					//#endif
+				}
+				else {
+					this[k] = conf[k];
+				}
 			}
 		}
+		catch (e) {
+			console.error(e);
+		}
+
 	}
 
 

@@ -18,7 +18,7 @@
 		</view>
 
 		<view class="bottom center">
-			<text class="padding20_ fsDef caaa">{{$soft.name}}</text>
+			<text class="padding20_ fsDef caaa">{{name}}</text>
 		</view>
 	</view>
 
@@ -39,12 +39,14 @@
 	import { onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
 	const { back } = inject('$pages');
 	const { post } = inject('$http');
+	const { name } = inject('$soft');
 	const datas = defineModel({ type: Array, default: [] });
 	const emit = defineEmits(['update']);
 	const pageIndex = ref(0); //分页码，必须是0，后面加载时会+1
 	const pageState = ref(0); //页面状态：0请求中，1请求完成，2出错
 	const pageMessage = ref('加载中');
 	const status = ref('click'); //分页状态值
+	const paging = ref({ index: 1, total: 0 });
 
 	const { api, params, listen, field } = defineProps({
 		params: {
@@ -112,10 +114,9 @@
 		}
 	}
 
-	const paging = { index: 1, total: 0 };
+
 	/**
 	 * refresh：是否加载第1页，否则就是页面+1
-	 * 
 	 */
 	const request = (refresh, option = {}) => {
 		const index = refresh ? 1 : (pageIndex.value + 1)
@@ -123,11 +124,12 @@
 		post(api, Object.assign({}, params, option, { index })).then(
 			res => {
 				uni.stopPullDownRefresh();
-				Object.assign(paging, res.paging);
+				Object.assign(paging.value, res.paging);
 
-				const resData = field ? res.data[field] : res.data;
+				const resData = (field ? res.data[field] : res.data) || [];
 				if (refresh) {
-					datas.value = [...resData];
+					if (resData.length > 0) datas.value = [...resData];
+					else datas.value.length = 0;
 				}
 				else if (resData.length > 0) {
 					datas.value.push(...resData);
@@ -135,12 +137,12 @@
 				emit('update', res.data, refresh);
 
 				pageState.value = 1;
-				pageIndex.value = paging.index;
-				if (paging.total < 2) pageIndex.value = 1;
-				if (paging.index < paging.total) {
+				pageIndex.value = paging.value.index;
+				if (paging.value.total < 2) pageIndex.value = 1;
+				if (paging.value.index < paging.value.total) {
 					status.value = 'loadmore';
 				}
-				else if (!paging.total) {
+				else if (!paging.value.total) {
 					status.value = 'empty';
 				}
 				else {
