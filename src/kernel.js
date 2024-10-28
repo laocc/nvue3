@@ -23,7 +23,7 @@ export default {
 	install(app, config, processor, librarys = []) {
 
 		for (let k in librarys) {
-			let key = '$' + k;
+			const key = `\$${k}`;
 			const obj = new librarys[k](app);
 			app.config.globalProperties[key] = obj;
 			app.provide(key, obj);
@@ -58,7 +58,7 @@ export default {
 				if (error === lastError) return;
 				lastError = error;
 				console.log({ error, instance, info });
-				http.post(`@${config.http.error}/error`, { error, instance, info });
+				http.post(`!@${config.http.error}/error`, { error, instance, info }).then(res => {}, err => {});
 			}
 			catch (err) {
 				console.log({ err })
@@ -70,7 +70,7 @@ export default {
 				if (error === lastWarn) return;
 				lastWarn = error;
 				console.log({ error, instance, trace });
-				http.post(`@${config.http.error}/warn`, { error, instance, trace });
+				http.post(`!@${config.http.error}/warn`, { error, instance, trace }).then(res => {}, err => {});
 			}
 			catch (err) {
 				console.log({ err })
