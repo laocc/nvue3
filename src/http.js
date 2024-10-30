@@ -2,8 +2,8 @@
  * toast最少显示长时间，主要是加载api的读取中后续关闭
  */
 const tstShow = 350;
-// const isDebug = (process.env.NODE_ENV === 'development');
-const isDebug = true;
+const isDebug = (process.env.NODE_ENV === 'development');
+// const isDebug = true;
 
 const baseResp = {
 	success: 1,
@@ -18,6 +18,7 @@ const config = {
 	modal: false, //出错时显示model，否则显示toast
 	timeout: 6000,
 	mintime: 100, //两次modal或toast之间间隔最短时间，小于此时间的不显示
+	detection: 0, //检测相同API连续请求间隔，小于此时间的报错，0不检测
 	toast: {
 		'l': '加载中...',
 		'r': '读取中...',
@@ -312,10 +313,6 @@ function doComplete(request, res, resolve, reject) {
 	request.timer.used = request.timer.after - request.timer.before;
 	request.timer.useTime = (request.timer.used / 1000) + 's';
 
-	/**
-	 * 1727661448.089
-	 */
-
 	if (request.toast && (tstShow > 0)) {
 		if (request.timer.used > tstShow) {
 			if (request.loading) uni.hideLoading();
@@ -327,7 +324,7 @@ function doComplete(request, res, resolve, reject) {
 		}
 	}
 
-	if (isDebug) console.log(request)
+	if (isDebug || config.debug) console.log(request)
 }
 
 
@@ -461,7 +458,7 @@ function doUpload_OLD(request, choose) {
 				formData: request.request,
 				files: files,
 				success: (res) => {
-					if (isDebug) console.log(res);
+					console.log(res);
 					try {
 						if (typeof res.data === 'string') res.data = JSON.parse(res.data);
 					}
@@ -507,7 +504,7 @@ function doUpload_OLD(request, choose) {
 					doSuccess(request, resp);
 				},
 				allError => {
-					if (isDebug) console.log('allError', allError);
+					console.log('allError', allError);
 					doFail(request, allError[0]);
 				});
 			//#endif
@@ -624,10 +621,9 @@ function FrequencyDetection(api) {
 	if (api[0] === '@') return null; //不检查频率
 
 	let nowTime = Date.now();
-	console.log({ api, nowTime, justPostTime });
 
-	if (api === justPostApi && nowTime - justPostTime < config.mintime) {
-		console.log({ nowTime, justPostTime, just: nowTime - justPostTime, min: config.mintime });
+	if (api === justPostApi && nowTime - justPostTime < config.detection) {
+		// console.log({ nowTime, justPostTime, just: nowTime - justPostTime, detection: config.detection });
 
 		return new Promise((resolve, reject) => {
 			reject({
@@ -655,15 +651,19 @@ export default class {
 	}
 
 	get(api, data = {}) {
-		const fd = FrequencyDetection(api);
-		if (fd) return fd;
+		if (config.detection > 0) {
+			const fd = FrequencyDetection(api);
+			if (fd) return fd;
+		}
 
 		return doRequest(new _request(api, data, 'get'));
 	}
 
 	post(api, data = {}) {
-		const fd = FrequencyDetection(api);
-		if (fd) return fd;
+		if (config.detection > 0) {
+			const fd = FrequencyDetection(api);
+			if (fd) return fd;
+		}
 
 		return doRequest(new _request(api, data, 'post'));
 	}

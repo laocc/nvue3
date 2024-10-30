@@ -35,7 +35,7 @@
 </template>
 
 <script setup>
-	import { computed, ref, inject, onMounted } from 'vue';
+	import { computed, ref, inject, onMounted, isRef, isReactive } from 'vue';
 	import { onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
 	const { back } = inject('$pages');
 	const { post } = inject('$http');
@@ -120,7 +120,7 @@
 	 */
 	const request = (refresh, option = {}) => {
 		const index = refresh ? 1 : (pageIndex.value + 1)
-
+		const loaded = Boolean(option.loaded || false);
 		post(api, Object.assign({}, params, option, { index })).then(
 			res => {
 				uni.stopPullDownRefresh();
@@ -128,13 +128,14 @@
 
 				const resData = (field ? res.data[field] : res.data) || [];
 				if (refresh) {
+					datas.value.length = 0;
 					if (resData.length > 0) datas.value = [...resData];
 					else datas.value.length = 0;
 				}
 				else if (resData.length > 0) {
 					datas.value.push(...resData);
 				}
-				emit('update', res.data, refresh);
+				emit('update', res.data, refresh, loaded);
 
 				pageState.value = 1;
 				pageIndex.value = paging.value.index;
@@ -164,7 +165,11 @@
 		request(true, { loaded: 1 });
 
 		if (!listen) return;
-		uni.$on(listen, () => { request(true, {}) });
+		uni.$off(listen);
+		uni.$on(listen, (...from) => {
+			console.log(`by paging listen(${listen})=======>`, from);
+			request(true, {})
+		});
 
 	})
 
