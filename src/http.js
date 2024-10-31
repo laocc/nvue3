@@ -92,10 +92,10 @@ const _request = class {
 	};
 
 	timer = {
+		used: 0,
 		ready: 0,
 		before: 0,
 		after: 0,
-		used: 0,
 	};
 
 	error = {};
@@ -310,7 +310,7 @@ function doFail(request, res, resolve, reject) {
 
 function doComplete(request, res, resolve, reject) {
 	request.timer.used = request.timer.after - request.timer.before;
-	request.timer.useTime = (request.timer.used / 1000) + 's';
+	request.timer.used = (request.timer.used / 1000) + 's';
 	request.timer.ready = request.timer.ready / 1000;
 	request.timer.before = request.timer.before / 1000;
 	request.timer.after = request.timer.after / 1000;
