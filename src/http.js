@@ -92,6 +92,7 @@ const _request = class {
 	};
 
 	timer = {
+		ready: 0,
 		before: 0,
 		after: 0,
 		used: 0,
@@ -310,6 +311,9 @@ function doFail(request, res, resolve, reject) {
 function doComplete(request, res, resolve, reject) {
 	request.timer.used = request.timer.after - request.timer.before;
 	request.timer.useTime = (request.timer.used / 1000) + 's';
+	request.timer.ready = request.timer.ready / 1000;
+	request.timer.before = request.timer.before / 1000;
+	request.timer.after = request.timer.after / 1000;
 
 	if (request.toast && (tstShow > 0)) {
 		if (request.timer.used > tstShow) {
@@ -480,7 +484,7 @@ function FrequencyDetection(api) {
 		return new Promise((resolve, reject) => {
 			reject({ error: 1, success: 0, message: '操作太频繁' })
 		});
-		
+
 	}
 
 	justPostTime = nowTime;
