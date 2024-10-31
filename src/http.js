@@ -281,8 +281,6 @@ function doSuccess(REQ, res, resolve, reject) {
 }
 
 function doFail(request, res, resolve, reject) {
-	if (!request.timer.after) request.timer.after = Date.now();
-	// console.error('uni.request Fail：', request, JSON.stringify(res));
 
 	if (res.errMsg.indexOf('Failed to connect') > 0) {
 		let info = res.errMsg.match(/([\w\.]+)\/([\d\.]+)\:(\d+)/);
@@ -339,13 +337,14 @@ function doRequest(request) {
 	}
 
 	return new Promise(async (resolve, reject) => {
-		request.timer.before = Date.now();
+		request.timer.ready = Date.now();
 		request.header.put = await processor.header(request.api, request.request, request.method);
 
 		const contType = (request.method === 'UPLOAD') ? 'multipart/form-data' : 'application/json';
 		request.header.put['content-type'] = contType;
 		delete request.header.put['referer'];
 
+		request.timer.before = Date.now();
 		uni.request({
 			url: request.api,
 			method: request.method,
@@ -354,164 +353,17 @@ function doRequest(request) {
 			data: request.request,
 			header: request.header.put,
 			success: (res) => {
+				request.timer.after = Date.now();
 				doSuccess(request, res, resolve, reject);
 			},
 			fail: (res) => {
+				request.timer.after = Date.now();
 				doFail(request, res, resolve, reject);
 			},
 			complete: (res) => {
 				doComplete(request, res, resolve, reject);
 			}
 		});
-
-	});
-}
-
-function cropImg(file) {
-	return new Promise((resolve, reject) => {
-		uni.getImageInfo({
-			src: file.path,
-			success(info) {
-				resolve({
-					path: file.path,
-					ext: info.type.toLowerCase(),
-					width: info.width,
-					height: info.height,
-					weight: file.size
-				})
-			},
-			fail(err) {
-				// console.log(err);
-				reject(err)
-			}
-		})
-	})
-}
-
-function upServerFile(request, file) {
-	return new Promise((resolve, reject) => {
-		request.request.data = JSON.stringify(request.request.data);
-		request.request.files = JSON.stringify([file]);
-		uni.uploadFile({
-			url: request.api,
-			filePath: file.path,
-			//#ifdef MP-ALIPAY
-			fileType: file.ext,
-			//#endif
-			name: file.name,
-			timeout: request.timeout,
-			header: request.header.put,
-			formData: request.request,
-			success: (res) => {
-				resolve(res);
-			},
-			fail: (res) => {
-				reject(res);
-			}
-		});
-	})
-}
-
-function objectJson(obj) {
-	return JSON.parse(JSON.stringify(obj));
-}
-
-/**
- * 上传 uni.chooseImage()选择好的文件
- * 
- * @param {Object} choose 是uni.chooseImage({success: (res)})中的res原样
- * @param {Object} saveSpace 0:自己服务器，1:uniCloud
- */
-function doUpload_OLD(request, choose) {
-
-	return new Promise((resolve, reject) => {
-		request.timer.before = Date.now();
-		const fileCount = choose.tempFiles.length;
-		const processAll = [];
-		for (let i = 0; i < fileCount; i++) {
-			processAll.push(cropImg(choose.tempFiles[i]));
-		}
-
-		return Promise.all(processAll).then(allFile => {
-			return allFile;
-		}).then(res => {
-			// console.log(res);
-
-			//#ifdef APP-PLUS
-			//app可以批量上传
-			const files = [];
-			for (let i = 0; i < fileCount; i++) {
-				res[i].name = `file${i}`;
-				files.push({
-					name: res[i].name,
-					uri: res[i].path
-				});
-			}
-			request.request.files = JSON.stringify(res);
-			request.request.data = JSON.stringify(request.request.data);
-
-			uni.uploadFile({
-				url: request.api,
-				timeout: request.timeout,
-				header: request.header.put,
-				dataType: request.encode,
-				formData: request.request,
-				files: files,
-				success: (res) => {
-					console.log(res);
-					try {
-						if (typeof res.data === 'string') res.data = JSON.parse(res.data);
-					}
-					catch (e) {
-						//TODO handle the exception
-					}
-					doSuccess(request, res, resolve, reject);
-				},
-				fail: (res) => {
-					doFail(request, res, resolve, reject);
-				},
-				complete: (res) => {
-					doComplete(request, res, resolve, reject)
-				}
-			});
-			//#endif
-
-			//#ifndef APP-PLUS
-			const processUp = [];
-			for (let i = 0; i < fileCount; i++) {
-				res[i].name = `file${i}`;
-				processUp.push(upServerFile(request, res[i]));
-			}
-
-			return Promise.all(processUp).then(
-				allFile => {
-					let resp = {};
-					const files = allFile.map((res, f) => {
-						let json = res.data;
-						try {
-							if (typeof json === 'string') json = JSON.parse(json);
-						}
-						catch (e) {
-							//TODO handle the exception
-						}
-						resp.data = json;
-						resp.header = allFile[0].header;
-						resp.errMsg = allFile[0].errMsg;
-						resp.statusCode = allFile[0].statusCode;
-						return json.data;
-					});
-					resp.files = files;
-					doSuccess(request, resp);
-				},
-				allError => {
-					console.log('allError', allError);
-					doFail(request, allError[0]);
-				});
-			//#endif
-
-		});
-
-
 
 	});
 }
@@ -626,12 +478,9 @@ function FrequencyDetection(api) {
 		// console.log({ nowTime, justPostTime, just: nowTime - justPostTime, detection: config.detection });
 
 		return new Promise((resolve, reject) => {
-			reject({
-				error: 1,
-				success: 0,
-				message: '操作太频繁'
-			})
+			reject({ error: 1, success: 0, message: '操作太频繁' })
 		});
+		
 	}
 
 	justPostTime = nowTime;
