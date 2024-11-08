@@ -53,12 +53,14 @@ export default {
 
 		if (!config.http.error) return;
 
-		app.config.errorHandler = (error, instance, info) => {
+		app.config.errorHandler = (error, instance, trace) => {
 			try {
 				if (error === lastError) return;
 				lastError = error;
-				console.log({ error, instance, info });
-				http.post(`!@${config.http.error}/error`, { error, instance, info }).then(res => {}, err => {});
+				// console.log({ error, instance, trace });
+				console.trace(error)
+				console.trace(trace)
+				http.post(`!@${config.http.error}/error`, { error, instance, trace });
 			}
 			catch (err) {
 				console.log({ err })
@@ -69,8 +71,10 @@ export default {
 			try {
 				if (error === lastWarn) return;
 				lastWarn = error;
-				console.log({ error, instance, trace });
-				http.post(`!@${config.http.error}/warn`, { error, instance, trace }).then(res => {}, err => {});
+				// console.log({ error, instance, trace });
+				console.trace(error)
+				console.trace(trace)
+				http.post(`!@${config.http.error}/warn`, { error, instance, trace });
 			}
 			catch (err) {
 				console.log({ err })

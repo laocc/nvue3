@@ -4,6 +4,7 @@
 const tstShow = 350;
 const isDebug = (process.env.NODE_ENV === 'development');
 // const isDebug = true;
+const nextPost = [];
 
 const baseResp = {
 	success: 1,
@@ -48,6 +49,11 @@ const _request = class {
 		if ((typeof uri !== 'string') || (!uri)) {
 			console.error('error', uri)
 			throw new Error('api 请求目标必须是string类型地址，且必填');
+		}
+
+		if ((nextPost.length > 0) && (this.method === 'POST')) {
+			data._append = JSON.parse(JSON.stringify(nextPost));
+			nextPost.length = 0;
 		}
 
 		let host = config.path;
@@ -330,7 +336,7 @@ function doComplete(request, res, resolve, reject) {
 }
 
 
-function doRequest(request) {
+async function doRequest(request) {
 
 	if (request.toast) {
 		request.loading = true;
@@ -389,7 +395,7 @@ function thisPost(api, data = {}) {
  * save=`s/upload/save/`
  * 
  */
-function doUploadAliYun(uri, option) {
+async function doUploadAliYun(uri, option) {
 
 	return new Promise(async (resolve, reject) => {
 		let { file, mime, used, source } = option;
@@ -472,7 +478,7 @@ function doUploadAliYun(uri, option) {
  * 操作频率检查
  * @param {Object} api
  */
-function FrequencyDetection(api) {
+async function FrequencyDetection(api) {
 
 	if (api[0] === '@') return null; //不检查频率
 
@@ -494,6 +500,7 @@ function FrequencyDetection(api) {
 }
 
 
+
 export default class {
 	processor = null;
 
@@ -503,27 +510,42 @@ export default class {
 		if (isDebug) console.log(config);
 	}
 
-	get(api, data = {}) {
+	async get(api, data = {}) {
 		if (config.detection > 0) {
-			const fd = FrequencyDetection(api);
+			const fd = await FrequencyDetection(api);
 			if (fd) return fd;
 		}
 
-		return doRequest(new _request(api, data, 'get'));
+		return await doRequest(new _request(api, data, 'get'));
 	}
 
-	post(api, data = {}) {
+	async post(api, data = {}) {
 		if (config.detection > 0) {
-			const fd = FrequencyDetection(api);
+			const fd = await FrequencyDetection(api);
 			if (fd) return fd;
 		}
 
-		return doRequest(new _request(api, data, 'post'));
+		return await doRequest(new _request(api, data, 'post'));
 	}
 
+	next(data) {
+		/**
+		 * 下一次post时请求时携带，后端用_append获取
+		 * 主要用于发送不紧急的数据，没必要发起一次http请求
+		 * 数据是array，后端遍历读取即可
+		 */
+		if (data === undefined) return JSON.parse(JSON.stringify(nextPost));
 
-	upload(uri, option) {
-		return doUploadAliYun(uri, option);
+		if (data === 'clear') {
+			nextPost.length = 0;
+			return;
+		}
+
+		nextPost.push(data);
+	}
+
+	async upload(uri, option) {
+		return await doUploadAliYun(uri, option);
 	}
 
 
