@@ -250,7 +250,7 @@ export default class {
 		//#endif
 	}
 
-	device() {
+	get device() {
 		return {
 			system: this.system,
 			brand: this.brand,

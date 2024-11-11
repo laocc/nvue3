@@ -13,23 +13,23 @@ const baseResp = {
 	data: {}
 };
 
+const toastConf = {
+	'l': '加载中...',
+	'r': '读取中...',
+	'f': '正在刷新...',
+	's': '保存中...',
+	'd': '删除中...',
+	'm': '发送短信...',
+	'p': '请求支付...',
+};
+
+const aliasConf = {};
+
 const config = {
-	path: '',
-	token: '',
-	modal: false, //出错时显示model，否则显示toast
-	timeout: 6000,
+	path: '', //API根目录
+	timeout: 6000, //请求最大耗时
 	mintime: 100, //两次modal或toast之间间隔最短时间，小于此时间的不显示
 	detection: 0, //检测相同API连续请求间隔，小于此时间的报错，0不检测
-	toast: {
-		'l': '加载中...',
-		'r': '读取中...',
-		'f': '正在刷新...',
-		's': '保存中...',
-		'd': '删除中...',
-		'm': '发送短信...',
-		'p': '请求支付...',
-	},
-	alias: {}
 };
 
 let processor;
@@ -75,7 +75,7 @@ const _request = class {
 		}
 
 		if (uri[0] !== '/') { //uri第1个字符为toast，提取出来
-			this.toast = config.toast[uri[0]] || '';
+			this.toast = toastConf[uri[0]] || '';
 			uri = uri.slice(1);
 		}
 
@@ -117,14 +117,14 @@ function apiAlias(api) {
 	let a = `/${uri[1]}`;
 	let b = `/${uri[1]}/${uri[2]}`;
 
-	if (config.alias[b]) {
+	if (aliasConf[b]) {
 		let append = uri.slice(3).join('/');
-		return `${config.alias[b]}/${append}`;
+		return `${aliasConf[b]}/${append}`;
 	}
 
-	if (config.alias[a]) {
+	if (aliasConf[a]) {
 		let append = uri.slice(2).join('/');
-		return `${config.alias[a]}/${append}`;
+		return `${aliasConf[a]}/${append}`;
 	}
 
 	return api;
@@ -332,7 +332,7 @@ function doComplete(request, res, resolve, reject) {
 		}
 	}
 
-	if (isDebug || config.debug) console.log(request)
+	console.log(request)
 }
 
 
@@ -346,15 +346,20 @@ async function doRequest(request) {
 		});
 	}
 
+
 	return new Promise(async (resolve, reject) => {
 		request.timer.ready = Date.now();
+		console.log('======');
 		request.header.put = await processor.header(request.api, request.request, request.method);
+		console.log(request);
 
 		const contType = (request.method === 'UPLOAD') ? 'multipart/form-data' : 'application/json';
 		request.header.put['content-type'] = contType;
 		delete request.header.put['referer'];
 
 		request.timer.before = Date.now();
+
+
 		uni.request({
 			url: request.api,
 			method: request.method,
@@ -363,14 +368,17 @@ async function doRequest(request) {
 			data: request.request,
 			header: request.header.put,
 			success: (res) => {
+				console.log('http success', res);
 				request.timer.after = Date.now();
 				doSuccess(request, res, resolve, reject);
 			},
 			fail: (res) => {
+				console.log('http fail', res);
 				request.timer.after = Date.now();
 				doFail(request, res, resolve, reject);
 			},
 			complete: (res) => {
+				console.log('http complete', res);
 				doComplete(request, res, resolve, reject);
 			}
 		});
@@ -501,12 +509,102 @@ async function FrequencyDetection(api) {
 
 
 
+async function downloadFile(url, callback) {
+
+	const key = url.md5();
+
+	async function download_file(path) {
+		return new Promise((resolve, reject) => {
+
+			const task = uni.downloadFile({
+				url: path,
+				success: (res) => {
+					if (res.statusCode === 200) {
+						console.log('下载成功', res);
+						//#ifdef H5
+						uni.setStorageSync(key, { file: res.tempFilePath });
+						resolve({ success: true, file: res.tempFilePath })
+						//#endif
+
+						//#ifndef H5
+						uni.saveFile({
+							tempFilePath: res.tempFilePath,
+							success: (file) => {
+								console.log('保存成功', file);
+								uni.setStorageSync(key, { file: file.savedFilePath });
+								resolve({ success: true, file: file.savedFilePath })
+							},
+							fail: err => {
+								resolve({ success: false, message: err.errMsg })
+							}
+						});
+						//#endif
+					}
+					else {
+						console.log('download null', { res })
+						resolve({ success: false, message: '文件不存在' })
+					}
+				},
+				fail: err => {
+					console.log('download error', { err })
+					resolve({ success: false, message: err.errMsg })
+				}
+			});
+
+			task.onProgressUpdate((res) => {
+				// console.log('下载进度', res.progress, progress);
+				// console.log('已经下载的数据长度', res.totalBytesWritten);
+				// console.log('预期需要下载的数据总长度', res.totalBytesExpectedToWrite);
+				// 满足测试条件，取消下载任务。
+				// if (res.progress > 50000) { task.abort(); }
+
+				if (typeof callback === 'function') callback(task, res);
+
+			});
+
+
+
+		});
+
+	}
+
+
+	return new Promise(async (resolve, reject) => {
+
+		let cache = uni.getStorageSync(key);
+		if (!cache) return resolve(await download_file(url));
+
+		uni.getSavedFileInfo({
+			filePath: cache.file,
+			success: async (res) => {
+				if (res.size > 0) {
+					console.log('从缓存读取成功', cache, res);
+					return resolve(cache)
+				}
+
+				console.log('从缓存读取成功，但是空文件', cache, res);
+				resolve(await download_file(url))
+			},
+			fail: async (err) => {
+				console.log('从缓存读取失败', cache, err);
+				resolve(await download_file(url))
+			}
+		});
+
+	});
+
+}
+
+
+
 export default class {
 	processor = null;
 
 	constructor(pro, conf) {
 		this.processor = processor = pro;
-		Object.assign(config, conf);
+		for (let k in config) config[k] = conf[k];
+		if (conf.toast) Object.assign(toastConf, conf.toast);
+		if (conf.alias) Object.assign(aliasConf, conf.alias);
 		if (isDebug) console.log(config);
 	}
 
@@ -534,7 +632,8 @@ export default class {
 		 * 主要用于发送不紧急的数据，没必要发起一次http请求
 		 * 数据是array，后端遍历读取即可
 		 */
-		if (data === undefined) return JSON.parse(JSON.stringify(nextPost));
+		// if (data === undefined) return JSON.parse(JSON.stringify(nextPost));
+		if (data === undefined) return [...nextPost];
 
 		if (data === 'clear') {
 			nextPost.length = 0;
@@ -546,6 +645,10 @@ export default class {
 
 	async upload(uri, option) {
 		return await doUploadAliYun(uri, option);
+	}
+
+	async download(uri, callback) {
+		return await downloadFile(uri, callback);
 	}
 
 
