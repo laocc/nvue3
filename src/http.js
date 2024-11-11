@@ -225,7 +225,6 @@ function doSuccess(REQ, res, resolve, reject) {
 
 	try {
 		if (REQ.code >= 200 && REQ.code < 210) { //服务器正常返回
-			// console.log(REQ);
 			if (REQ.response.error === 0) {
 				resolve(REQ.response);
 			}
@@ -349,16 +348,11 @@ async function doRequest(request) {
 
 	return new Promise(async (resolve, reject) => {
 		request.timer.ready = Date.now();
-		console.log('======');
 		request.header.put = await processor.header(request.api, request.request, request.method);
-		console.log(request);
-
 		const contType = (request.method === 'UPLOAD') ? 'multipart/form-data' : 'application/json';
 		request.header.put['content-type'] = contType;
 		delete request.header.put['referer'];
-
 		request.timer.before = Date.now();
-
 
 		uni.request({
 			url: request.api,
@@ -368,17 +362,14 @@ async function doRequest(request) {
 			data: request.request,
 			header: request.header.put,
 			success: (res) => {
-				console.log('http success', res);
 				request.timer.after = Date.now();
 				doSuccess(request, res, resolve, reject);
 			},
 			fail: (res) => {
-				console.log('http fail', res);
 				request.timer.after = Date.now();
 				doFail(request, res, resolve, reject);
 			},
 			complete: (res) => {
-				console.log('http complete', res);
 				doComplete(request, res, resolve, reject);
 			}
 		});
@@ -433,7 +424,7 @@ async function doUploadAliYun(uri, option) {
 						 * resUp.data是由阿里云向callback请求时所得到的值，
 						 * 也就是上面请求config时进行signature设置的callbackBody
 						 */
-						console.log({ resUp });
+						// console.log({ resUp });
 
 						if (resUp.statusCode === 200) {
 							let fileInfo = JSON.parse(resUp.data);
