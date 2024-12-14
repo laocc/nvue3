@@ -191,7 +191,7 @@ export default class {
 
 		if (!icon) icon = 'success';
 		if (!time) time = 1500;
-		
+
 		uni.navigateBack({
 			delta: 1,
 			animationType: outType[animation.type || 'pop'],
@@ -261,14 +261,16 @@ export default class {
 
 	realUrl(uri, params, getAnimation) {
 		if (uri.slice(-1) === '/') uri += 'index';
-		
+
 		if (undefined === params) params = {};
 		let animation = {
 			type: 'pop-in',
 			time: 300
 		};
 		if (maps[uri]) uri = maps[uri]; //URI映射
-		let lab = uri[0];
+
+		//第2个字符是/，则lab是第1个字符
+		let lab = uri.slice(1, 2) === '/' ? uri[0] : '/';
 
 		if (lab === '.') { //当前位置的同级目录或上一级目录
 			const level = uri.indexOf('/');
@@ -299,8 +301,8 @@ export default class {
 		if (lab !== '/') { //当前目录的同级文件
 			let path = getLevelPath(1);
 			path.push(uri) //目标path纳入最后
-			path = path.join('/').build_query(params);
-			return { path, animation, tabbar };
+
+			return { path: path.join('/').build_query(params), animation, tabbar };
 		}
 
 		return { path: uri.build_query(params), animation, tabbar };

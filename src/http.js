@@ -136,7 +136,7 @@ function apiAlias(api) {
 function failMessage(REQ, resolve, reject) {
 
 	if (!REQ.message) REQ.message = '';
-	if (REQ.message.indexOf('cert.CertPathValidator') > 0) {
+	if (REQ.message.includes('cert.CertPathValidator')) {
 		//证书路径错误，基本上发生在被抓包的时候
 		REQ.loading = false;
 		uni.hideLoading();
@@ -288,7 +288,7 @@ function doSuccess(REQ, res, resolve, reject) {
 
 function doFail(request, res, resolve, reject) {
 
-	if (res.errMsg.indexOf('Failed to connect') > 0) {
+	if (res.errMsg.includes('Failed to connect')) {
 		let info = res.errMsg.match(/([\w\.]+)\/([\d\.]+)\:(\d+)/);
 		if (info) res.info = {
 			domain: info[1],
@@ -297,12 +297,18 @@ function doFail(request, res, resolve, reject) {
 		}
 		res.errMsg = "服务器连接失败:" + info[2];
 	}
-	else if (res.errMsg.indexOf('timeout') > 0) {
+	else if (res.errMsg.includes('timeout')) {
 		res.errMsg = '连接服务器超时，请检查网络';
 	}
-	else if (res.errMsg.indexOf('Unable to resolve host') > 0) {
+	else if (res.errMsg.includes('Unable to resolve host')) {
 		res.errMsg = '域名解析失败';
 	}
+	else if (res.errMsg.includes('NAME_NOT_RESOLVED')) {
+		res.errMsg = '域名解析失败';
+	}
+
+	let mer = res.errMsg.match(/<title>(.+)<\/title>/);
+	if (mer) res.errMsg = mer[1];
 
 	res.message = res.errMsg;
 	request.response = res;
