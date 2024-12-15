@@ -10,6 +10,8 @@ export default class {
 	singlePage = false; //是否从朋友圈进入的单页模式
 
 	// #ifdef APP-PLUS
+	os = '';
+	ua = '';
 	packName = ''; //APP包名
 	appid = ''; //小程序的APPID，H5和APP为在manifest中设置的appid
 	name = ''; //应用名称，即在manifest中设置的应用名称
@@ -34,13 +36,13 @@ export default class {
 		navbar: 0,
 	};
 
-	constructor(conf) {
+	constructor() {
 		try {
 
 			// #ifdef MP-WEIXIN
 			const { scene } = uni.getLaunchOptionsSync();
 			this.singlePage = (scene === 1154);
-			console.log('weixin.singlePage=', this.singlePage, scene);
+			// console.log('weixin.singlePage=', this.singlePage, scene);
 			// #endif
 
 			// console.log('soft start')
@@ -76,7 +78,7 @@ export default class {
 				this.size.top = windows.statusBarHeight || 25; //顶部状态栏高度，css中直接用var(--status-bar-height)
 				this.size.ratio = windows.pixelRatio; //设备像素比
 
-				this.size.navigation = conf.navHeight || 44; //导航栏高度 var(--status-bar-height)
+				this.size.navigation = 44; //导航栏高度
 				this.size.bodyHeight = windows.screenHeight - this.size.top - this.size.navigation; //除去顶部和菜单的高度
 			}
 			else {
@@ -90,7 +92,7 @@ export default class {
 				this.size.screenHeight = system.screenHeight;
 				this.size.width = system.windowWidth; //屏幕尺寸
 				this.size.height = system.windowHeight;
-				this.size.navigation = conf.navHeight || 44; //导航栏高度
+				this.size.navigation = 44; //导航栏高度
 				this.size.bodyHeight = system.screenHeight - this.size.top - this.size.navigation; //除去顶部和菜单的高度
 			}
 			// #endif
@@ -117,7 +119,7 @@ export default class {
 			this.size.screenHeight = system.screenHeight;
 			this.size.width = system.windowWidth; //屏幕尺寸
 			this.size.height = system.windowHeight;
-			this.size.navigation = conf.navHeight || 44; //导航栏高度
+			this.size.navigation = 44; //导航栏高度
 			this.size.bodyHeight = system.screenHeight - this.size.top - this.size.navigation; //除去顶部和菜单的高度
 
 			// #endif
@@ -164,7 +166,8 @@ export default class {
 			// console.log('plus.runtime', plus.runtime)
 			this.os = plus.os.name.toLowerCase(); //操作系统，android或ios
 			this.osver = plus.os.version; //操作系统版本号
-			this.version = import.meta.env.VITE_VERSION || conf.version; //热更包版本号
+			this.version = import.meta.env.VITE_VERSION; //热更包版本号
+			this.ua = (import.meta.env.VITE_UA || 'Mozilla/5.0 ({os}/{osver} {brand}/{model})').re(this);
 
 			this.packName = plus.weex.config.env.appName; //包名
 			this.appid = plus.runtime.appid; //如：__UNI__123456
@@ -180,7 +183,7 @@ export default class {
 						// console.log('plus.device.getOAID', res)
 						this.oaid = res.oaid;
 					},
-					fail: err => {
+					fail: (err) => {
 						// console.error('plus.device.getOAID', this.os, err);
 						this.simulator++;
 					}
@@ -190,7 +193,7 @@ export default class {
 						// console.log('plus.device.getAAID', res)
 						this.aaid = res.aaid;
 					},
-					fail: err => {
+					fail: (err) => {
 						// console.error('plus.device.getAAID', err);
 						this.simulator++;
 					}
@@ -212,18 +215,6 @@ export default class {
 			});
 			// #endif
 
-
-			for (let k in conf) {
-				if (k === 'ua') {
-					//#ifndef H5 || MP
-					//h5和小程序不可以自定义
-					this.ua = (conf.ua || 'Mozilla/5.0 ({os}/{osver} {brand}/{model})').re(this);
-					//#endif
-				}
-				else {
-					this[k] = conf[k];
-				}
-			}
 		}
 		catch (e) {
 			console.error(e);
@@ -261,6 +252,7 @@ export default class {
 			theme: this.theme,
 
 			//#ifdef APP-PLUS
+			os: this.os,
 			packName: this.packName,
 			simulator: this.simulator, //模拟器可能性判断，oaid,aaid,uuid其中任一个读取出错各加1
 			oaid: this.oaid,

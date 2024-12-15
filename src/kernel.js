@@ -24,15 +24,15 @@ export default {
 
 		for (let k in librarys) {
 			const key = `\$${k}`;
-			const obj = new librarys[k](app);
+			const obj = new librarys[k](app, config);
 			app.config.globalProperties[key] = obj;
 			app.provide(key, obj);
 		}
 
-		const page = new pageClass(config.maps);
+		const page = new pageClass(config.maps || {});
 		app.config.globalProperties.$pages = page;
 
-		const soft = new softClass(config.soft);
+		const soft = new softClass();
 		app.config.globalProperties.$soft = soft;
 		app.provide('$soft', soft);
 		app.provide('$size', soft.size);
