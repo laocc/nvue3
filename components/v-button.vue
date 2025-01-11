@@ -1,6 +1,7 @@
 <template>
-	<view class="fixBtn" :style="css">
-		<slot />
+	<view class="fixBtn row middle" :style="css">
+		<x-icon class="flex1 center" icon="&#xe708;" size="10" color="#333" />
+		<x-icon class="flex1 center" icon="&#xe66a;" size="20" color="#333" />
 	</view>
 </template>
 
@@ -20,10 +21,11 @@
 	.fixBtn {
 		position: fixed;
 		z-index: 12345;
-		background-color: #ffffff33;
+		background-color: #ffffff77;
 		border-radius: 50px;
 		top: 24px;
 		width: 87px;
 		height: 32px;
+		padding: 0 0 0 5px;
 	}
 </style>

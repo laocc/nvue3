@@ -54,47 +54,42 @@ export default class {
 				this.appid = base.appId; //这是uniAPP的ID，不是小程序的ID
 				this.version = base.appVersion; //APP的版本号，也就是在manifest中设置的版本号，小程序为提交申核的版本号
 				this.theme = base.theme; //主体色
-			}
-			// #endif
 
-			// #ifdef MP-WEIXIN || APP || H5
-			if (!this.singlePage) {
 				const device = uni.getDeviceInfo();
 				this.brand = (device.brand || 'unknow').toLowerCase(); //手机品牌
 				this.model = device.model || 'unknow'; //手机品牌下的型号
 				this.devid = device.deviceId || 'unknow'; //设备唯一编码
 				this.system = device.system || 'unknow'; //操作系统及版本	
+			}
+			// #endif
 
+			// #ifdef MP-WEIXIN || APP || H5
+			if (!this.singlePage) {
 				const windows = uni.getWindowInfo();
 				this.size.windowWidth = windows.windowWidth; //可使用窗口宽度	
 				this.size.windowHeight = windows.windowHeight; //
-
 				this.size.width = windows.windowWidth; //可使用窗口宽度
 				this.size.height = windows.windowHeight;
-
 				this.size.screenWidth = windows.screenWidth; //屏幕尺寸
 				this.size.screenHeight = windows.screenHeight;
-
 				this.size.top = windows.statusBarHeight || 25; //顶部状态栏高度，css中直接用var(--status-bar-height)
 				this.size.ratio = windows.pixelRatio; //设备像素比
-
-				this.size.navigation = 44; //导航栏高度
-				this.size.bodyHeight = windows.screenHeight - this.size.top - this.size.navigation; //除去顶部和菜单的高度
 			}
 			else {
 				//单页模式下，只有这个能获取到尺寸
 				const system = uni.getSystemInfoSync();
 				this.size.windowWidth = system.windowWidth; //可使用窗口宽度	
 				this.size.windowHeight = system.windowHeight; //
-				this.size.top = system.statusBarHeight || 26; //顶部状态栏高度
-				this.size.ratio = system.pixelRatio; //设备像素比
-				this.size.screenWidth = system.screenWidth; //屏幕尺寸
-				this.size.screenHeight = system.screenHeight;
 				this.size.width = system.windowWidth; //屏幕尺寸
 				this.size.height = system.windowHeight;
-				this.size.navigation = 44; //导航栏高度
-				this.size.bodyHeight = system.screenHeight - this.size.top - this.size.navigation; //除去顶部和菜单的高度
+				this.size.screenWidth = system.screenWidth; //屏幕尺寸
+				this.size.screenHeight = system.screenHeight;
+				this.size.top = system.statusBarHeight || 26; //顶部状态栏高度
+				this.size.ratio = system.pixelRatio; //设备像素比
 			}
+
+			this.size.navigation = 44; //导航栏高度
+			this.size.bodyHeight = system.screenHeight - this.size.top - this.size.navigation; //除去顶部和菜单的高度
 			// #endif
 
 
@@ -133,7 +128,6 @@ export default class {
 			}
 			//#endif
 
-
 			// #ifdef MP-WEIXIN||MP-ALIPAY||MP-BAIDU||MP-QQ||MP-KUAISHOU
 			const accountInfo = uni.getAccountInfoSync();
 			this.appid = accountInfo.miniProgram.appId; //小程序的appID，抖音、飞书、百度，不支持
@@ -149,21 +143,17 @@ export default class {
 			// #endif
 
 
-			// #ifdef MP-WEIXIN||MP-ALIPAY||MP-BAIDU||MP-TOUTIAO||MP-QQ
 			//胶囊按钮
+			// #ifdef MP-WEIXIN||MP-ALIPAY||MP-BAIDU||MP-TOUTIAO||MP-QQ
 			this.size.button = uni.getMenuButtonBoundingClientRect();
-			this.size.navbar = this.size.button.bottom;
 			// #endif
 
 			// #ifdef H5
-			this.size.button = { bottom: 56, height: 32, left: (system.windowWidth - 94), right: (system.windowWidth - 7), top: 24, width: 87 };
-			this.size.navbar = this.size.button.bottom;
+			const { width } = this.size;
+			this.size.button = { bottom: 56, height: 32, left: (width - 94), right: (width - 7), top: 24, width: 87 };
 			// #endif
-			// console.log('this.size.button', this.size.button)
 
 			// #ifdef APP-PLUS
-			// console.log('plus.os', plus.os)
-			// console.log('plus.runtime', plus.runtime)
 			this.os = plus.os.name.toLowerCase(); //操作系统，android或ios
 			this.osver = plus.os.version; //操作系统版本号
 			this.version = import.meta.env.VITE_VERSION; //热更包版本号
@@ -171,11 +161,6 @@ export default class {
 
 			this.packName = plus.weex.config.env.appName; //包名
 			this.appid = plus.runtime.appid; //如：__UNI__123456
-			// this.debug = !!plus.weex.config.env.debugMode; //开发环境
-			// this.option = plus.runtime.arguments;
-			//调用plus.device.imei、plus.device.imsi、plus.device.uuid 不会触发授权提示框
-			// console.log('plus.runtimeplus.runtimeplus.runtimeplus.runtime')
-			// console.log(plus.runtime)
 
 			if (this.os === 'android') {
 				plus.device.getOAID({
