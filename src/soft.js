@@ -156,7 +156,7 @@ export default class {
 			// #endif
 
 			// #ifdef H5
-			this.size.button = { bottom: 56, height: 32, left: 281, right: 368, top: 24, width: 87 };
+			this.size.button = { bottom: 56, height: 32, left: (system.windowWidth - 94), right: (system.windowWidth - 7), top: 24, width: 87 };
 			this.size.navbar = this.size.button.bottom;
 			// #endif
 			// console.log('this.size.button', this.size.button)
