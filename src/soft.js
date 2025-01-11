@@ -76,7 +76,10 @@ export default class {
 				this.size.ratio = windows.pixelRatio; //设备像素比
 			}
 			else {
-				//单页模式下，只有这个能获取到尺寸
+				/**
+				 * 小程序基础库 3.7.0 以下，单页模式下，只有这个能获取到尺寸
+				 * https://developers.weixin.qq.com/community/develop/doc/0000a47ab74a188fd7724b3e365401
+				 */
 				const system = uni.getSystemInfoSync();
 				this.size.windowWidth = system.windowWidth; //可使用窗口宽度	
 				this.size.windowHeight = system.windowHeight; //
@@ -87,11 +90,7 @@ export default class {
 				this.size.top = system.statusBarHeight || 26; //顶部状态栏高度
 				this.size.ratio = system.pixelRatio; //设备像素比
 			}
-
-			this.size.navigation = 44; //导航栏高度
-			this.size.bodyHeight = system.screenHeight - this.size.top - this.size.navigation; //除去顶部和菜单的高度
 			// #endif
-
 
 			// #ifndef MP-WEIXIN || APP || H5
 			const system = uni.getSystemInfoSync();
