@@ -133,12 +133,12 @@ function apiAlias(api) {
 /**
  * 请求后台数据出错时，统一弹窗
  */
-function failMessage(REQ, resolve, reject) {
+function failMessage(RFM, resolve, reject) {
 
-	if (!REQ.message) REQ.message = '';
-	if (REQ.message.includes('cert.CertPathValidator')) {
+	if (!RFM.message) RFM.message = '';
+	if (RFM.message.includes('cert.CertPathValidator')) {
 		//证书路径错误，基本上发生在被抓包的时候
-		REQ.loading = false;
+		RFM.loading = false;
 		uni.hideLoading();
 		uni.showToast({
 			title: '网络错误或证书错误',
@@ -149,49 +149,49 @@ function failMessage(REQ, resolve, reject) {
 	}
 	if (typeof reject !== 'function') reject = () => {};
 
-	if (REQ.silent) { //请求者要求直接返回，这里不做任何处理
-		REQ.loading = false;
+	if (RFM.silent) { //请求者要求直接返回，这里不做任何处理
+		RFM.loading = false;
 		uni.hideLoading();
-		reject(REQ.response);
+		reject(RFM.response);
 		return;
 	}
-	REQ.loading = false;
+	RFM.loading = false;
 	uni.hideLoading();
 
-	if (!REQ.message) return;
+	if (!RFM.message) return;
 
 	let now = Date.now();
 	if (now - justModalTime < config.mintime) return;
 	justModalTime = now;
 
-	if (REQ.response.modal) {
-		const { title, message, cancel } = REQ.response.modal;
+	if (RFM.response.modal) {
+		const { title, message, cancel } = RFM.response.modal;
 		uni.showModal({
 			showCancel: Boolean(cancel || false),
 			title: title || '请求数据失败',
-			content: message || REQ.message,
+			content: message || RFM.message,
 			success(res) {
-				REQ.response.confirm = res.confirm;
+				RFM.response.confirm = res.confirm;
 				if (cancel) {
-					if (res.confirm) resolve(REQ.response);
-					else reject(REQ.response);
+					if (res.confirm) resolve(RFM.response);
+					else reject(RFM.response);
 				}
 				else if (res.confirm) {
-					reject(REQ.response);
+					reject(RFM.response);
 				}
 			}
 		});
 		return;
 	}
 
-	if (REQ.response.toast) {
-		const { timeout, icon } = REQ.response.toast;
+	if (RFM.response.toast) {
+		const { timeout, icon } = RFM.response.toast;
 		uni.showToast({
 			duration: parseInt(timeout || 3000),
-			title: REQ.message,
+			title: RFM.message,
 			icon: (icon || 'none'),
 			success() {
-				reject(REQ.response)
+				reject(RFM.response)
 			}
 		});
 		return;
@@ -199,10 +199,10 @@ function failMessage(REQ, resolve, reject) {
 
 	uni.showToast({
 		duration: 3000,
-		title: REQ.message,
+		title: RFM.message,
 		icon: 'none',
 		success() {
-			reject(REQ.response)
+			reject(RFM.response)
 		}
 	});
 
@@ -227,7 +227,7 @@ function doSuccess(REQ, res, resolve, reject) {
 		if (REQ.code >= 200 && REQ.code < 210) { //服务器正常返回
 			if (REQ.response.error === 0) {
 				resolve(REQ.response);
-				postFailBox();
+				if (failBox.length > 0) postFailBox();
 			}
 			else {
 				//业务逻辑出错，如后端主动返回500等信息
@@ -287,9 +287,9 @@ function doSuccess(REQ, res, resolve, reject) {
 	}
 }
 
-function doFail(request, res, resolve, reject) {
+function doFail(REF, res, resolve, reject) {
 
-	failBox.push(res);
+	if (import.meta.env.VITE_ERROR_URI && !REF.silent) failBox.push(res);
 
 	if (res.errMsg.includes('Failed to connect')) {
 		let info = res.errMsg.match(/([\w\.]+)\/([\d\.]+)\:(\d+)/);
@@ -314,12 +314,12 @@ function doFail(request, res, resolve, reject) {
 	if (mer) res.errMsg = mer[1];
 
 	res.message = res.errMsg;
-	request.response = res;
-	request.header.get = res.header;
-	request.message = res.errMsg;
-	request.code = res.statusCode || -1;
-	request.error = 1;
-	failMessage(request, resolve, reject);
+	REF.response = res;
+	REF.header.get = res.header;
+	REF.message = res.errMsg;
+	REF.code = res.statusCode || -1;
+	REF.error = 1;
+	failMessage(REF, resolve, reject);
 }
 
 function doComplete(request, res, resolve, reject) {
@@ -346,8 +346,6 @@ function doComplete(request, res, resolve, reject) {
 
 function postFailBox() {
 	if (failBox.length === 0) return;
-	api = import.meta.env.VITE_ERROR_URI;
-	if (!api) return;
 	return doRequest(new _request(`!${api}`, failBox, 'post'));
 }
 
