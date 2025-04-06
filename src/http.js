@@ -3,8 +3,8 @@
  */
 const tstShow = 350;
 const isDebug = (process.env.NODE_ENV === 'development');
-// const isDebug = true;
 const nextPost = [];
+const failBox = [];
 
 const baseResp = {
 	success: 1,
@@ -227,6 +227,7 @@ function doSuccess(REQ, res, resolve, reject) {
 		if (REQ.code >= 200 && REQ.code < 210) { //服务器正常返回
 			if (REQ.response.error === 0) {
 				resolve(REQ.response);
+				postFailBox();
 			}
 			else {
 				//业务逻辑出错，如后端主动返回500等信息
@@ -288,6 +289,8 @@ function doSuccess(REQ, res, resolve, reject) {
 
 function doFail(request, res, resolve, reject) {
 
+	failBox.push(res);
+
 	if (res.errMsg.includes('Failed to connect')) {
 		let info = res.errMsg.match(/([\w\.]+)\/([\d\.]+)\:(\d+)/);
 		if (info) res.info = {
@@ -341,6 +344,16 @@ function doComplete(request, res, resolve, reject) {
 }
 
 
+function postFailBox() {
+	if (failBox.length === 0) return;
+	api = import.meta.env.VITE_ERROR_URI;
+	if (!api) return;
+	return doRequest(new _request(`!${api}`, failBox, 'post'));
+}
+
+
+
+
 async function doRequest(request) {
 
 	if (request.toast) {
@@ -387,7 +400,6 @@ async function doRequest(request) {
 function thisPost(api, data = {}) {
 	return doRequest(new _request(api, data, 'post'));
 }
-
 
 /**
  * @param {Object} option
