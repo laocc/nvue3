@@ -298,25 +298,25 @@ function doFail(REF, res, resolve, reject) {
 			host: info[2],
 			port: info[3]
 		}
-		res.errMsg = "服务器连接失败:" + info[2];
+		res.message = "服务器连接失败:" + info[2];
 	}
 	else if (res.errMsg.includes('timeout')) {
-		res.errMsg = '连接服务器超时，请检查网络';
+		res.message = '连接服务器超时，请检查网络';
 	}
 	else if (res.errMsg.includes('Unable to resolve host')) {
-		res.errMsg = '域名解析失败';
+		res.message = '域名解析失败';
 	}
 	else if (res.errMsg.includes('NAME_NOT_RESOLVED')) {
-		res.errMsg = '域名解析失败';
+		res.message = '域名解析失败';
+	}
+	else {
+		let mer = res.errMsg.match(/<title>(.+)<\/title>/);
+		if (mer) res.message = mer[1];
 	}
 
-	let mer = res.errMsg.match(/<title>(.+)<\/title>/);
-	if (mer) res.errMsg = mer[1];
-
-	res.message = res.errMsg;
 	REF.response = res;
 	REF.header.get = res.header;
-	REF.message = res.errMsg;
+	REF.message = res.message;
 	REF.code = res.statusCode || -1;
 	REF.error = 1;
 	failMessage(REF, resolve, reject);
