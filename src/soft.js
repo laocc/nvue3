@@ -1,6 +1,6 @@
 export default class {
 	system = ''; //操作系统及版本
-	platform = process.env.VUE_APP_PLATFORM; //mp-weixin,h5,app-plus等
+	platform = process.env.VUE_APP_PLATFORM; //mp-weixin,h5,app等
 	mode = process.env.NODE_ENV; //运行环境 
 
 	brand = ''; //手机品牌，huawei,xiaomi,vivo,oppo
@@ -9,7 +9,7 @@ export default class {
 
 	singlePage = false; //是否从朋友圈进入的单页模式
 
-	// #ifdef APP-PLUS
+	// #ifdef APP
 	os = '';
 	ua = '';
 	packName = ''; //APP包名
@@ -96,10 +96,10 @@ export default class {
 			const system = uni.getSystemInfoSync();
 
 			this.brand = (system.brand || 'unknow').toLowerCase(); //手机品牌
-			this.name = system.name || 'unknow'; //应用名称
+			this.name = system.appName || system.name || 'unknow'; //应用名称
 			this.model = system.model || 'unknow'; //手机品牌下的型号
 			this.devid = system.deviceId || 'unknow'; //设备唯一编码
-			this.sdk = system.SDKVersion || '0.0.0'; //小程序主版本号
+			this.sdk = system.SDKVersion || system.hostSDKVersion || '0.0.0'; //小程序主版本号
 			this.appid = system.appId;
 			this.os = system.osName;
 			this.osver = system.osVersion;
@@ -141,7 +141,6 @@ export default class {
 			if (!this.version) this.version = accountTou.microapp.envType;
 			// #endif
 
-
 			//胶囊按钮
 			// #ifdef MP-WEIXIN||MP-ALIPAY||MP-BAIDU||MP-TOUTIAO||MP-QQ
 			this.size.button = uni.getMenuButtonBoundingClientRect();
@@ -152,7 +151,7 @@ export default class {
 			this.size.button = { bottom: 56, height: 32, left: (width - 94), right: (width - 7), top: 24, width: 87 };
 			// #endif
 
-			// #ifdef APP-PLUS
+			// #ifdef APP
 			this.os = plus.os.name.toLowerCase(); //操作系统，android或ios
 			this.osver = plus.os.version; //操作系统版本号
 			this.version = import.meta.env.VITE_VERSION; //热更包版本号
@@ -184,7 +183,6 @@ export default class {
 				});
 			}
 
-
 			plus.device.getInfo({
 				success: (res) => {
 					// console.log('plus.device.getInfo', res)
@@ -206,8 +204,6 @@ export default class {
 
 	}
 
-
-
 	/**
 	 * 设置屏幕常亮
 	 * 
@@ -220,7 +216,7 @@ export default class {
 			keepScreenOn: keep
 		});
 		//#endif
-		//#ifdef APP-PLUS
+		//#ifdef APP
 		plus.device.setWakelock(keep);
 		//#endif
 	}
@@ -235,7 +231,7 @@ export default class {
 			version: this.version,
 			theme: this.theme,
 
-			//#ifdef APP-PLUS
+			//#ifdef APP
 			os: this.os,
 			packName: this.packName,
 			simulator: this.simulator, //模拟器可能性判断，oaid,aaid,uuid其中任一个读取出错各加1
@@ -247,7 +243,6 @@ export default class {
 			//#endif
 		}
 	}
-
 
 	/**
 	 * 为了防止快速点按返回键导致程序退出重写quit方法改为隐藏至后台
@@ -264,18 +259,18 @@ export default class {
 			/**
 			 * 再次返回退出应用
 			 */
-			if (str == '再按一次退出应用') {
+			const title = 'Press again to exit the application';
+			if (str === title) {
 				plus.runtime.quit();
+				return;
 			}
-			else {
-				uni.showToast({
-					title: '再按一次退出应用啦',
-					icon: 'none'
-				})
-			}
+			
+			uni.showToast({
+				title,
+				icon: 'none'
+			})
 		});
 
 	}
-
 
 }

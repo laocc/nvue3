@@ -1,10 +1,7 @@
-/**
- * toast最少显示长时间，主要是加载api的读取中后续关闭
- */
-const tstShow = 350;
+const tstShow = 350; //如果请求太快，toast会一闪而过，这里限制为至少350ms后执行hideLoading
+const nextPost = []; //页面不紧急的消息暂存在这里，下一次请求时顺带捎上_append
+const failBox = []; //保存错误消息，若服务器不可达，则临时存在这里
 const isDebug = (process.env.NODE_ENV === 'development');
-const nextPost = [];
-const failBox = [];
 
 const baseResp = {
 	success: 1,
@@ -14,14 +11,31 @@ const baseResp = {
 };
 
 const toastConf = {
-	'l': '加载中...',
-	'r': '读取中...',
-	'f': '正在刷新...',
-	's': '保存中...',
-	'd': '删除中...',
-	'm': '发送短信...',
-	'p': '请求支付...',
+	'l': 'Loading...',
+	'r': 'Reading ...',
+	'f': 'Refreshing...',
+	's': 'Saving...',
+	'd': 'Deletion...',
+	'm': 'Sending...',
+	'p': 'Paying...',
 };
+
+const dimMsg = {
+	apierr: 'The API request target must be a string type address and must be mandatory',
+	cert: 'Network error or certificate error',
+	failed: 'Data request failed',
+	system: 'System exception',
+	server: 'Server connection failed',
+	timeout: 'Connection timeout, please check the network',
+	resolve: 'Unable to resolve host',
+	network: 'Network request failed',
+	bakin: 'Currently using a backup line, should we switch to the main line?',
+	bakout: 'Should we switch to the backup line?',
+	valid: 'The server did not respond with valid data',
+	upload: 'Upload failed',
+	frequent: 'Operation too frequent',
+	notexist: 'File does not exist',
+}
 
 const aliasConf = {};
 
@@ -38,25 +52,28 @@ let justModalTime = 0;
 let justPostTime = 0;
 let justPostApi = '';
 
-
-
 const _request = class {
 
 	constructor(uri, data, method) {
 		this.method = method.toUpperCase();
+
 		if (!data || data === undefined) data = {};
 		if (typeof data !== 'object') data = { value: data };
-		if ((typeof uri !== 'string') || (!uri)) {
-			console.error('error', uri)
-			throw new Error('api 请求目标必须是string类型地址，且必填');
-		}
-
 		if ((nextPost.length > 0) && (this.method === 'POST')) {
 			data._append = JSON.parse(JSON.stringify(nextPost));
 			nextPost.length = 0;
 		}
+		this.request = data;
 
-		let host = config.path;
+		if ((typeof uri !== 'string') || (!uri)) {
+			if (isDebug) console.error('error', uri)
+			throw new Error(dimMsg.apierr);
+		}
+
+		if (uri.slice(0, 4) === 'http') {
+			this.api = uri;
+			return;
+		}
 
 		if (uri[0] === '!') { //uri第1个字符为!，静默处理
 			this.silent = true;
@@ -67,20 +84,12 @@ const _request = class {
 			uri = uri.slice(1);
 		}
 
-		if (uri.slice(0, 4) === 'http') {
-			//https://domain.com/cont/action
-			let tmp = uri.split('/');
-			uri = '/' + tmp.slice(3).join('/'); //提取URL中的uri部分
-			host = `${tmp[0]}//${tmp[2]}`; //提取URL中的host部分
-		}
-
 		if (uri[0] !== '/') { //uri第1个字符为toast，提取出来
 			this.toast = toastConf[uri[0]] || '';
 			uri = uri.slice(1);
 		}
 
-		this.api = host + apiAlias(uri);
-		this.request = data;
+		this.api = config.path + apiAlias(uri);
 	}
 
 	api = '';
@@ -109,7 +118,6 @@ const _request = class {
 	response = {};
 }
 
-
 function apiAlias(api) {
 	let uri = api.split('/');
 	if (!uri[1]) uri[1] = 'index';
@@ -132,6 +140,8 @@ function apiAlias(api) {
 
 /**
  * 请求后台数据出错时，统一弹窗
+ * 
+ * 
  */
 function failMessage(RFM, resolve, reject) {
 
@@ -141,10 +151,10 @@ function failMessage(RFM, resolve, reject) {
 		RFM.loading = false;
 		uni.hideLoading();
 		uni.showToast({
-			title: '网络错误或证书错误',
+			title: dim.dimMsg,
 			icon: 'none'
 		});
-		reject({ error: 1, message: '网络错误或证书错误' });
+		reject({ error: 1, message: dim.dimMsg });
 		return;
 	}
 	if (typeof reject !== 'function') reject = () => {};
@@ -168,7 +178,7 @@ function failMessage(RFM, resolve, reject) {
 		const { title, message, cancel } = RFM.response.modal;
 		uni.showModal({
 			showCancel: Boolean(cancel || false),
-			title: title || '请求数据失败',
+			title: title || dimMsg.failed,
 			content: message || RFM.message,
 			success(res) {
 				RFM.response.confirm = res.confirm;
@@ -264,7 +274,7 @@ function doSuccess(REQ, res, resolve, reject) {
 			else {
 				//PHP框架级错误，得到的是一个json格式错误信息，基本为php直接返回非200的状态
 				REQ.error = REQ.response.error || 502;
-				REQ.message = REQ.response.message || '系统异常';
+				REQ.message = REQ.response.message || dimMsg.system;
 				Object.assign(REQ.response, baseResp, {
 					success: 0,
 					error: REQ.error,
@@ -276,9 +286,9 @@ function doSuccess(REQ, res, resolve, reject) {
 	}
 	catch (err) {
 		//上面try里自身出错
-		console.error(err)
+		if (isDebug) console.error(err)
 		REQ.error = 9;
-		REQ.message = err.description || err.message || '系统错误';
+		REQ.message = err.description || err.message || dimMsg.system;
 		Object.assign(REQ.response, baseResp, {
 			success: 0,
 			error: 9
@@ -298,16 +308,42 @@ function doFail(REF, res, resolve, reject) {
 			host: info[2],
 			port: info[3]
 		}
-		res.message = "服务器连接失败:" + info[2];
+		res.message = dimMsg.server + info[2];
 	}
 	else if (res.errMsg.includes('timeout')) {
-		res.message = '连接服务器超时，请检查网络';
+		res.message = dimMsg.timeout;
 	}
-	else if (res.errMsg.includes('Unable to resolve host')) {
-		res.message = '域名解析失败';
-	}
-	else if (res.errMsg.includes('NAME_NOT_RESOLVED')) {
-		res.message = '域名解析失败';
+	else if (res.errMsg.includes('Unable to resolve host') || res.errMsg.includes('NAME_NOT_RESOLVED')) {
+		res.message = dimMsg.resolve;
+
+		if (import.meta.env.VITE_API_BACKUP) {
+			if (config.path === import.meta.env.VITE_API_BACKUP) {
+				uni.showModal({
+					title: dimMsg.network,
+					content: dimMsg.bakin,
+					showCancel: true,
+					success(cnf) {
+						if (cnf.confirm) {
+							config.path = import.meta.env.VITE_API;
+						}
+					}
+				});
+			}
+			else {
+				uni.showModal({
+					title: dimMsg.network,
+					content: dimMsg.bakout,
+					showCancel: true,
+					success(cnf) {
+						if (cnf.confirm) {
+							config.path = import.meta.env.VITE_API_BACKUP;
+						}
+					}
+				});
+			}
+
+		}
+
 	}
 	else {
 		let mer = res.errMsg.match(/<title>(.+)<\/title>/);
@@ -343,14 +379,10 @@ function doComplete(request, res, resolve, reject) {
 	console.log(request)
 }
 
-
 function postFailBox() {
 	if (failBox.length === 0) return;
 	return doRequest(new _request(`!${api}`, failBox, 'post'));
 }
-
-
-
 
 async function doRequest(request) {
 
@@ -361,7 +393,6 @@ async function doRequest(request) {
 			mask: true
 		});
 	}
-
 
 	return new Promise(async (resolve, reject) => {
 		request.timer.ready = Date.now();
@@ -394,14 +425,10 @@ async function doRequest(request) {
 	});
 }
 
-
 function thisPost(api, data = {}) {
 	return doRequest(new _request(api, data, 'post'));
 }
 
-/**
- * @param {Object} option
- */
 /**
  * @param {Object} uri
  * @param {Object} option
@@ -426,7 +453,7 @@ async function doUploadAliYun(uri, option) {
 				const { url, formData, name, save } = resConf.data;
 				// console.log({ url, formData, name });
 				if (!url) {
-					return reject({ success: false, error: 505, message: `服务器未响应有效数据` });
+					return reject({ success: false, error: 505, message: dimMsg.valid });
 				}
 
 				uni.uploadFile({
@@ -462,9 +489,8 @@ async function doUploadAliYun(uri, option) {
 						}
 
 						else {
-							reject({ success: false, error: resUp.statusCode, message: `上传失败` });
+							reject({ success: false, error: resUp.statusCode, message: dimMsg.upload });
 						}
-
 
 					},
 					fail: errUp => {
@@ -480,14 +506,8 @@ async function doUploadAliYun(uri, option) {
 			}
 		);
 
-
-
-
-
-
 	})
 }
-
 
 /**
  * 操作频率检查
@@ -503,7 +523,7 @@ async function FrequencyDetection(api) {
 		// console.log({ nowTime, justPostTime, just: nowTime - justPostTime, detection: config.detection });
 
 		return new Promise((resolve, reject) => {
-			reject({ error: 1, success: 0, message: '操作太频繁' })
+			reject({ error: 1, success: 0, message: dimMsg.frequent })
 		});
 
 	}
@@ -513,8 +533,6 @@ async function FrequencyDetection(api) {
 
 	return null; //操作正常，可以继续
 }
-
-
 
 async function downloadFile(url, callback) {
 
@@ -549,7 +567,7 @@ async function downloadFile(url, callback) {
 					}
 					else {
 						console.log('download null', { res })
-						resolve({ success: false, message: '文件不存在' })
+						resolve({ success: false, message: dimMsg.notexist })
 					}
 				},
 				fail: err => {
@@ -569,12 +587,9 @@ async function downloadFile(url, callback) {
 
 			});
 
-
-
 		});
 
 	}
-
 
 	return new Promise(async (resolve, reject) => {
 
@@ -602,8 +617,6 @@ async function downloadFile(url, callback) {
 
 }
 
-
-
 export default class {
 	processor = null;
 
@@ -612,6 +625,7 @@ export default class {
 		for (let k in config) config[k] = conf[k];
 		if (conf.toast) Object.assign(toastConf, conf.toast);
 		if (conf.alias) Object.assign(aliasConf, conf.alias);
+		if (conf.locale) Object.assign(dimMsg, conf.locale);
 		if (isDebug) console.log(config);
 	}
 
@@ -657,7 +671,5 @@ export default class {
 	async download(uri, callback) {
 		return await downloadFile(uri, callback);
 	}
-
-
 
 };
