@@ -51,7 +51,7 @@ export default class {
 				const base = uni.getAppBaseInfo();
 				this.name = base.appName || 'unknow'; //应用名称
 				this.sdk = base.SDKVersion || '0.0.0'; //SDK主版本号
-				this.appid = base.appId; //这是uniAPP的ID，不是小程序的ID
+				this.appid = base.appId; //这是DCloud uniAPP的ID，不是小程序的ID
 				this.version = base.appVersion; //APP的版本号，也就是在manifest中设置的版本号，小程序为提交申核的版本号
 				this.theme = base.theme; //主体色
 
@@ -96,11 +96,11 @@ export default class {
 			const system = uni.getSystemInfoSync();
 
 			this.brand = (system.brand || 'unknow').toLowerCase(); //手机品牌
-			this.name = system.appName || system.name || 'unknow'; //应用名称
+			this.name = system.appName || system.name || 'unknow'; //应用名称，manifest中设的名称
 			this.model = system.model || 'unknow'; //手机品牌下的型号
 			this.devid = system.deviceId || 'unknow'; //设备唯一编码
 			this.sdk = system.SDKVersion || system.hostSDKVersion || '0.0.0'; //小程序主版本号
-			this.appid = system.appId;
+			this.appid = system.appId; //这是DCloud uniapp的appID
 			this.os = system.osName;
 			this.osver = system.osVersion;
 			this.version = system.appVersion; //APP的版本号，也就是在manifest中设置的版本号，小程序为提交申核的版本号
@@ -264,7 +264,7 @@ export default class {
 				plus.runtime.quit();
 				return;
 			}
-			
+
 			uni.showToast({
 				title,
 				icon: 'none'

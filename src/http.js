@@ -396,7 +396,8 @@ async function doRequest(request) {
 
 	return new Promise(async (resolve, reject) => {
 		request.timer.ready = Date.now();
-		request.header.put = await processor.header(request.api, request.request, request.method);
+		await processor.preprocessing(request);
+		// request.header.put = await processor.header(request.api, request.request, request.method);
 		const contType = (request.method === 'UPLOAD') ? 'multipart/form-data' : 'application/json';
 		request.header.put['content-type'] = contType;
 		delete request.header.put['referer'];
