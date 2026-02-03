@@ -75,23 +75,11 @@ const _request = class {
 			return;
 		}
 
-		if (uri[0] === '!') { //uri第1个字符为!，静默处理
-			this.silent = true;
-			this.uri = uri.slice(1);
-		}
-		else if (uri[0] === '@') { //uri第1个字符为@，不进行频率检查
-			this.uri = uri.slice(1);
-		}
-		else if (uri[0] === '$') {
+		if (uri[0] !== '/') { //uri第1个字符为toast，提取出来
 			this.uri = uri.slice(1);
 			this.toast = uri[0];
-			this.silent = true;
-		}
-		else if (uri[0] !== '/') { //uri第1个字符为toast，提取出来
-			this.uri = uri.slice(1);
-			this.toast = uri[0];
-			if (toastConf[uri[0]]) {
-				this.toast = toastConf[uri[0]];
+			if (toastConf[this.toast]) {
+				this.toast = toastConf[this.toast];
 			}
 			else {
 				this.silent = true;
@@ -112,11 +100,11 @@ const _request = class {
 	method = 'POST';
 	code = 0;
 	message = '';
+	toast = '';
 	silent = false; // 直接返回
 	loading = false;
 	encode = 'json';
 	timeout = config.timeout;
-	toast = '';
 	header = {
 		put: {}, //发出的head
 		get: {}, //收到的head
