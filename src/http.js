@@ -77,20 +77,31 @@ const _request = class {
 
 		if (uri[0] === '!') { //uri第1个字符为!，静默处理
 			this.silent = true;
-			uri = uri.slice(1);
+			this.uri = uri.slice(1);
+		}
+		else if (uri[0] === '@') { //uri第1个字符为@，不进行频率检查
+			this.uri = uri.slice(1);
+		}
+		else if (uri[0] === '$') {
+			this.uri = uri.slice(1);
+			this.toast = uri[0];
+			this.silent = true;
+		}
+		else if (uri[0] !== '/') { //uri第1个字符为toast，提取出来
+			this.uri = uri.slice(1);
+			this.toast = uri[0];
+			if (toastConf[uri[0]]) {
+				this.toast = toastConf[uri[0]];
+			}
+			else {
+				this.silent = true;
+			}
+		}
+		else {
+			this.uri = uri;
 		}
 
-		if (uri[0] === '@') { //uri第1个字符为@，不进行频率检查
-			uri = uri.slice(1);
-		}
-
-		if (uri[0] !== '/') { //uri第1个字符为toast，提取出来
-			this.toast = toastConf[uri[0]] || '';
-			uri = uri.slice(1);
-		}
-
-		// this.uri = apiAlias(uri);
-		this.uri = uri;
+		// this.uri = apiAlias(this.uri);
 		this.gateway = config.path;
 		this.api = config.path + this.uri;
 	}
@@ -200,7 +211,7 @@ function failMessage(RFM, resolve, reject) {
 	}
 
 	if (RFM.response.toast) {
-		const { timeout, icon } = RFM.response.toast;
+		const { timeout, icon } = RFM.response;
 		uni.showToast({
 			duration: parseInt(timeout || 3000),
 			title: RFM.message,
