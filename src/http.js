@@ -83,6 +83,7 @@ const _request = class {
 			}
 			else {
 				this.silent = true;
+				this.silence = true;
 			}
 		}
 		else {
@@ -101,6 +102,7 @@ const _request = class {
 	code = 0;
 	message = '';
 	toast = '';
+	silence = false; // 静默，不显示loading
 	silent = false; // 直接返回
 	loading = false;
 	encode = 'json';
@@ -163,7 +165,7 @@ function failMessage(RFM, resolve, reject) {
 	}
 	if (typeof reject !== 'function') reject = () => {};
 
-	if (RFM.silent) { //请求者要求直接返回，这里不做任何处理
+	if (RFM.silent) { //请求者要求直接返回，后面不做任何处理
 		RFM.loading = false;
 		uni.hideLoading();
 		reject(RFM.response);
@@ -385,12 +387,12 @@ function doComplete(request, res, resolve, reject) {
 
 function postFailBox() {
 	if (failBox.length === 0) return;
-	return doRequest(new _request(`!${api}`, failBox, 'post'));
+	return doRequest(new _request(import.meta.env.VITE_ERROR_URI, failBox, 'post'));
 }
 
 async function doRequest(request) {
 
-	if (request.toast) {
+	if (request.toast && !request.silence) {
 		request.loading = true;
 		uni.showLoading({
 			title: request.toast,
