@@ -89,7 +89,8 @@ const _request = class {
 			uri = uri.slice(1);
 		}
 
-		this.uri = apiAlias(uri);
+		// this.uri = apiAlias(uri);
+		this.uri = uri;
 		this.gateway = config.path;
 		this.api = config.path + this.uri;
 	}
