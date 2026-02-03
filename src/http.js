@@ -89,10 +89,14 @@ const _request = class {
 			uri = uri.slice(1);
 		}
 
-		this.api = config.path + apiAlias(uri);
+		this.uri = apiAlias(uri);
+		this.gateway = config.path;
+		this.api = config.path + this.uri;
 	}
 
 	api = '';
+	uri = '';
+	gateway = '';
 	method = 'POST';
 	code = 0;
 	message = '';
