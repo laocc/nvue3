@@ -2,7 +2,7 @@ const tstShow = 350; //如果请求太快，toast会一闪而过，这里限制�
 const nextPost = []; //页面不紧急的消息暂存在这里，下一次请求时顺带捎上_append
 const failBox = []; //保存错误消息，若服务器不可达，则临时存在这里
 const isDebug = (process.env.NODE_ENV === 'development');
-const noReject = (import.meta.env.VITE_REJECT === 'false');
+const noReject = (import.meta.env.VITE_REJECT === 'false'); //recect由resolve执行
 
 const baseResp = {
 	success: 1,
