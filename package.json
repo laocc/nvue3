@@ -1,6 +1,6 @@
 {
 	"name": "nvue3",
-	"version": "1.1.35",
+	"version": "1.1.36",
 	"description": "for uniapp & vue3",
 	"main": "src/kernel.js",
 	"scripts": {

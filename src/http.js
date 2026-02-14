@@ -2,6 +2,7 @@ const tstShow = 350; //如果请求太快，toast会一闪而过，这里限制�
 const nextPost = []; //页面不紧急的消息暂存在这里，下一次请求时顺带捎上_append
 const failBox = []; //保存错误消息，若服务器不可达，则临时存在这里
 const isDebug = (process.env.NODE_ENV === 'development');
+const noReject = (import.meta.env.VITE_REJECT === 'false');
 
 const baseResp = {
 	success: 1,
@@ -405,8 +406,8 @@ async function doRequest(request) {
 		await processor.preprocessing(request);
 		// request.header.put = await processor.header(request.api, request.request, request.method);
 		const contType = (request.method === 'UPLOAD') ? 'multipart/form-data' : 'application/json';
-		request.header.put['content-type'] = contType;
 		delete request.header.put['referer'];
+		request.header.put['content-type'] = contType;
 		request.timer.before = Date.now();
 
 		uni.request({
@@ -418,14 +419,14 @@ async function doRequest(request) {
 			header: request.header.put,
 			success: (res) => {
 				request.timer.after = Date.now();
-				doSuccess(request, res, resolve, reject);
+				doSuccess(request, res, resolve, noReject ? resolve : reject);
 			},
 			fail: (res) => {
 				request.timer.after = Date.now();
-				doFail(request, res, resolve, reject);
+				doFail(request, res, resolve, noReject ? resolve : reject);
 			},
 			complete: (res) => {
-				doComplete(request, res, resolve, reject);
+				doComplete(request, res);
 			}
 		});
 
