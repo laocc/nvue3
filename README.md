@@ -1,6 +1,5 @@
 
 
-
 # main.js
 ```
 import App from './App';
